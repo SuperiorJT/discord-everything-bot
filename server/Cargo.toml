@@ -1,0 +1,22 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dotenv = "0.15.0"
+tokio = { version = "1", features = ["full"] }
+warp = "0.3"
+futures = "0.3.15"
+twilight-cache-inmemory = { path = "../../twilight/cache/in-memory" }
+twilight-gateway = { path = "../../twilight/gateway" }
+twilight-http = { path = "../../twilight/http" }
+twilight-model = { path = "../../twilight/model" }
+twilight-embed-builder = { path = "../../twilight/embed-builder" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.25.3", features = ["chrono", "bundled", "serde_json"] }
+date_time_parser = "0.1.1"
+chrono = "0.4.19"

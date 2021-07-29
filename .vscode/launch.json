@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Cargo launch",
+            "cwd": "${workspaceFolder}/server",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--manifest-path=server/Cargo.toml"
+                ]
+            },
+            "program": "${cargo:program}",
+            "args": []
+        }
+    ]
+}
