@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     import { slide } from 'svelte/transition';
     import FaAngleUp from 'svelte-icons/fa/FaAngleUp.svelte'
     import { expanded } from '../side-bar/stores';

@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     export let href: string;
     export let title = "Plugin Title";
     export let desc = "Power up your automation with cool commands and automations!";

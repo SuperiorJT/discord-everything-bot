@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     import { page } from "$app/stores";
     import { isActivePath } from "../../util/active-path";
     import { open } from '../side-bar/stores';

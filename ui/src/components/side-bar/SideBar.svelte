@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     import { open, expanded } from "./stores";
 </script>
 

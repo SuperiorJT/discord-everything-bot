@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     import FaChevronLeft from 'svelte-icons/fa/FaChevronLeft.svelte';
     import FaCaretLeft from 'svelte-icons/fa/FaCaretLeft.svelte';
     import { expanded, open } from "../side-bar/stores";

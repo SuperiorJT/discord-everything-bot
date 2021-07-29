@@ -1,5 +1,5 @@
 <script>
-  import '../global.postcss'
+  import '../app.postcss'
   import SideBar from '../components/side-bar/SideBar.svelte';
   import SideNav from '../components/side-nav/SideNav.svelte';
   import { open } from '../components/side-bar/stores';

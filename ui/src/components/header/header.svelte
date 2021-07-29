@@ -1,4 +1,4 @@
-<script lang="typescript">
+<script>
     import FaBars from 'svelte-icons/fa/FaBars.svelte';
     import FaSearch from 'svelte-icons/fa/FaSearch.svelte'
     import { open, expanded } from '../side-bar/stores';
@@ -36,7 +36,7 @@
         <div class="h-5 opacity-60 mr-3">
             <FaSearch />
         </div>
-        <input type="text" placeholder="Search..." class="flex-grow bg-transparent border-0 focus:ring-0 placeholder-white placeholder-opacity-40 caret-white/40 text-white/60">
+        <input type="text" placeholder="Search..." class="flex-grow bg-transparent border-0 focus:ring-0 placeholder-white placeholder-opacity-40 caret-white/60 text-white/60">
     </div>
     <!-- Flex Fill -->
     <div class="hidden lg:block flex-auto"></div>
