@@ -1,12 +1,18 @@
-mod guild;
-use warp::{Filter};
+mod util;
+mod recover;
+mod models;
+mod controllers;
+mod routes;
+
+use twilight_cache_inmemory::InMemoryCache;
+use warp::{Filter, hyper::Method};
 use twilight_http::Client;
 
-use crate::bot::db::Database;
+use crate::db::Database;
 
-use serde::{Serialize};
+use serde::Serialize;
 
-use self::guild::guild_routes;
+use self::routes::{guild::guild_routes, welcome::welcome_routes};
 
 #[derive(Serialize)]
 struct ErrorMessage {
@@ -22,6 +28,18 @@ fn with_client(client: Client) -> impl Filter<Extract = (Client,), Error = std::
     warp::any().map(move || client.clone())
 }
 
-pub fn routes(db: Database, client: Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    guild_routes(client.clone())
+fn with_cache(cache: InMemoryCache) -> impl Filter<Extract = (InMemoryCache,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || cache.clone())
+}
+
+pub fn routes(db: Database, client: Client, cache: InMemoryCache) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let cors = warp::cors()
+        .allow_origin("http://localhost:3000")
+        .allow_header("content-type")
+        .allow_methods(&[Method::GET, Method::POST, Method::DELETE]);
+
+    guild_routes(client, cache)
+        .or(welcome_routes(db))
+        .recover(recover::handle_rejection)
+        .with(cors)
 }

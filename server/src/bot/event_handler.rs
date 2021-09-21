@@ -29,16 +29,18 @@ impl EventHandler<'_> {
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let handler = EventHandler { bot, shard_id };
 
+        println!("HANDLING EVENT: {:?}\n", event);
+
         match event {
             Event::MemberAdd(member_add) => handle_member_add(member_add, &handler).await?,
             Event::InteractionCreate(interaction) => match interaction.0 {
                 Interaction::ApplicationCommand(command) => slash_commands::process(&command, &handler).await?,
                 _ => {}
             },
-            Event::ReactionAdd(reaction) => {
+            Event::ReactionAdd(_reaction) => {
                 
             },
-            Event::ReactionRemove(reaction) => {
+            Event::ReactionRemove(_reaction) => {
 
             },
             _ => {}
@@ -56,8 +58,8 @@ impl EventHandler<'_> {
             .http
             .interaction_callback(
                 command.id,
-                command.token.clone(),
-                InteractionResponse::ChannelMessageWithSource(CallbackData {
+                &command.token,
+                &InteractionResponse::ChannelMessageWithSource(CallbackData {
                     allowed_mentions: None,
                     content: Some(message.into()),
                     embeds: vec![],
@@ -65,6 +67,7 @@ impl EventHandler<'_> {
                     tts: None,
                 }),
             )
+            .exec()
             .await?;
 
         Ok(())
@@ -79,8 +82,8 @@ impl EventHandler<'_> {
             .http
             .interaction_callback(
                 command.id,
-                command.token.clone(),
-                InteractionResponse::ChannelMessageWithSource(CallbackData {
+                &command.token,
+                &InteractionResponse::ChannelMessageWithSource(CallbackData {
                     allowed_mentions: None,
                     content: None,
                     embeds,
@@ -88,6 +91,7 @@ impl EventHandler<'_> {
                     tts: None,
                 }),
             )
+            .exec()
             .await?;
 
         Ok(())

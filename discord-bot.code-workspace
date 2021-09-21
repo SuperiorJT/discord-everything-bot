@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "path": "server"
+        },
+        {
+            "path": "ui"
+        }
+    ],
+    "files": "LICENSE",
+    "settings": {},
+    "launch": {
+        "configurations": [],
+        "compounds": []
+    }
+}

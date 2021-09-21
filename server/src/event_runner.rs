@@ -26,7 +26,10 @@ pub async fn run(event_runner: EventRunner, mut events: impl Stream<Item = (u64,
 }
 
 async fn handle_event(event_runner: EventRunner, shard_id: u64, event: Event) -> Result<(), Box<dyn Error + Send + Sync>> {
-    event_runner.bot.handle_event(shard_id, event).await?;
+    event_runner.bot.handle_event(shard_id, event.clone()).await.map_err(|e| {
+        eprintln!("Failed to handle {:?}: {}", event, e);
+        e
+    })?;
 
     Ok(())
 }

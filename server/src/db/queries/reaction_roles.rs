@@ -11,12 +11,12 @@ pub struct SqlReactionRolesQueries(pub Arc<Mutex<Connection>>);
 
 impl SqlReactionRolesQueries {
     pub async fn create_message(&self, message: &ReactionRolesMsg) -> Result<(), Box<dyn Error>> {
-        if let None = message.message_id {
+        if message.message_id.is_none() {
             return Err("message_id is not set".into());
         }
         let conn = self.0.lock().await;
         conn.execute("
-            INSERT INTO reaction_roles (
+            INSERT INTO reaction_roles_message (
                 message_id
                 channel_id
                 guild_id
@@ -32,7 +32,7 @@ impl SqlReactionRolesQueries {
 
     pub async fn fetch_messages_for_guild(&self, guild_id: GuildId) -> Result<Vec<ReactionRolesMsg>, Box<dyn Error>> {
         let conn = self.0.lock().await;
-        let messages = conn.prepare("SELECT * FROM reaction_roles WHERE guild_id = ?")?.query_map(params![guild_id.0], |row| {
+        let messages = conn.prepare("SELECT * FROM reaction_roles_message WHERE guild_id = ?")?.query_map(params![guild_id.0], |row| {
             Ok(ReactionRolesMsg {
                 message_id: Some(MessageId(row.get(0)?)),
                 channel_id: ChannelId(row.get(1)?),

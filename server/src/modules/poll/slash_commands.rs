@@ -19,7 +19,7 @@ impl<'a> PollCommand<'a> {
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let command = self.0;
 
-        let mut poll = Poll::from(command.as_ref());
+        let poll = Poll::from(command.as_ref());
 
         let mut embed = EmbedBuilder::new()
             .description(poll.question.clone())
@@ -53,15 +53,17 @@ impl<'a> PollCommand<'a> {
         );
 
         event_handler
-            .embed_interaction_reply(&command, vec![embed])
+            .embed_interaction_reply(command, vec![embed])
             .await?;
 
         let original_response = event_handler
             .bot
             .http
-            .get_interaction_original(command.token.clone())?
+            .get_interaction_original(&command.token)?
+            .exec()
             .await?
-            .expect("Could not fetch original response");
+            .model()
+            .await?;
 
         // let (positive, negative) = (
         //     RequestReactionType::Custom {
@@ -74,42 +76,58 @@ impl<'a> PollCommand<'a> {
         //     },
         // );
 
-        let db = &event_handler.bot.db;
-        db.poll()
-            .create_poll(&mut poll)
-            .await
-            .expect("could not create poll in db");
+        // let db = &event_handler.bot.db;
+        // db.poll()
+        //     .create_poll(&mut poll)
+        //     .await
+        //     .expect("could not create poll in db");
 
-        let (positive, negative) = match db.poll().fetch_poll_options(command.guild_id.unwrap()).await {
-            Ok(res) => (
-                RequestReactionType::Custom {
-                    id: res.0 .0,
-                    name: Some(res.0 .1),
-                },
-                RequestReactionType::Custom {
-                    id: res.1 .0,
-                    name: Some(res.1 .1),
-                },
-            ),
-            Err(_) => (
-                RequestReactionType::Unicode {
-                    name: "👍".into()
-                },
-                RequestReactionType::Unicode {
-                    name: "👎".into()
-                },
-            ),
+        
+
+        // let response;
+        // let (positive, negative) = match db.poll().fetch_poll_options(command.guild_id.unwrap()).await {
+        //     Ok(res) => {
+        //         response = res;
+        //         (
+        //             RequestReactionType::Custom {
+        //                 id: response.0 .0,
+        //                 name: Some(&response.0 .1),
+        //             },
+        //             RequestReactionType::Custom {
+        //                 id: response.1 .0,
+        //                 name: Some(&response.1 .1),
+        //             },
+        //         )
+        //     },
+        //     Err(_) => (
+        //         RequestReactionType::Unicode {
+        //             name: "👍".into()
+        //         },
+        //         RequestReactionType::Unicode {
+        //             name: "👎".into()
+        //         },
+        //     ),
+        // };
+
+        let positive = RequestReactionType::Unicode {
+            name: "👍"
         };
+        let negative = RequestReactionType::Unicode {
+            name: "👎"
+        };
+
 
         event_handler
             .bot
             .http
-            .create_reaction(original_response.channel_id, original_response.id, positive)
+            .create_reaction(original_response.channel_id, original_response.id, &positive)
+            .exec()
             .await?;
         event_handler
             .bot
             .http
-            .create_reaction(original_response.channel_id, original_response.id, negative)
+            .create_reaction(original_response.channel_id, original_response.id, &negative)
+            .exec()
             .await?;
 
         Ok(())

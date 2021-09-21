@@ -3,3 +3,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .input-text {
+    @apply w-full max-w-lg h-12 transition-all ease-out bg-gray-200 dark:bg-gray-900 border-0 rounded-md outline-none focus:ring-blue-500 hover:ring-blue-500 hover:ring-1;
+  }
+}

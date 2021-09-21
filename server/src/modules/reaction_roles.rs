@@ -43,6 +43,7 @@ impl ReactionRolesMsg {
                 self.role_map.get(emoji_id).unwrap().to_owned(),
             )
             .reason("Reaction Role")?
+            .exec()
             .await?;
 
         Ok(())
@@ -66,6 +67,7 @@ impl ReactionRolesMsg {
                 self.role_map.get(emoji_id).unwrap().to_owned(),
             )
             .reason("Reaction Role")?
+            .exec()
             .await?;
 
         Ok(())
@@ -76,20 +78,20 @@ impl ReactionRolesMsg {
     ///
     /// Will Err if the message is already posted.
     pub async fn post(&mut self, http: &Client) -> Result<(), Box<dyn Error + Send + Sync>> {
-        if let Some(_) = self.message_id {
+        if self.message_id.is_some() {
             return Err("Reaction Role already posted: Message ID is not empty".into());
         }
 
-        let message = http.create_message(self.channel_id).content(self.content.clone())?.embeds(self.embeds.clone())?.await?;
+        let message = http.create_message(self.channel_id).content(&self.content)?.embeds(&self.embeds)?.exec().await?.model().await?;
 
         self.message_id = Some(message.id);
 
         // react with all of the emoji in the role map
         for key in self.role_map.keys() {
-            http.create_reaction(self.channel_id, message.id, RequestReactionType::Custom {
+            http.create_reaction(self.channel_id, message.id, &RequestReactionType::Custom {
                 id: *key,
                 name: None,
-            }).await?;
+            }).exec().await?;
         }
 
         Ok(())
