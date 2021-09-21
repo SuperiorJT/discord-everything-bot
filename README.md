@@ -13,12 +13,12 @@ The bot is currently named "Bingus Bot". Don't ask...
 * [ ] Custom Commands
 * [ ] **(WIP)** Reaction Roles
 * [ ] Moderator
-  - * [ ] Moderator Roles
-  - * [ ] Audit Logging
-  - * [ ] AutoMod
-  - * [ ] AutoMod Actions
-  - * [ ] Restricted Channels
-  - * [ ] Commands
+ - * [ ] Moderator Roles
+ - * [ ] Audit Logging
+ - * [ ] AutoMod
+ - * [ ] AutoMod Actions
+ - * [ ] Restricted Channels
+ - * [ ] Commands
 * [ ] Music
 
 # Setup
