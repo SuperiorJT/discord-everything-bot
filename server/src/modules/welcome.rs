@@ -2,7 +2,9 @@ use std::error::Error;
 
 use twilight_model::{gateway::payload::MemberAdd, guild::Guild, id::ChannelId, user::User};
 
-use crate::{bot::event_handler::EventHandler, db::queries::welcome::WelcomeModule, models::embed::Embed};
+use crate::{
+    bot::event_handler::EventHandler, db::queries::welcome::WelcomeModule, models::embed::Embed,
+};
 
 #[derive(sqlx::FromRow, serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -17,7 +19,7 @@ pub struct WelcomeExpanded {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub join_roles: Option<WelcomeJoinRolesContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub leave: Option<WelcomeLeaveContent>
+    pub leave: Option<WelcomeLeaveContent>,
 }
 
 impl WelcomeExpanded {
@@ -43,7 +45,7 @@ impl From<WelcomeExpandedRow> for WelcomeExpanded {
             join: None,
             join_dm: None,
             join_roles: None,
-            leave: None
+            leave: None,
         };
         if w.join_enabled.is_some() {
             val.join = Some(WelcomeJoinContent {
@@ -51,7 +53,7 @@ impl From<WelcomeExpandedRow> for WelcomeExpanded {
                 message_type: w.join_message_type,
                 channel_id: w.join_channel_id,
                 content: w.join_content,
-                embed: w.join_embed.and_then(|val| serde_json::from_str(&val).ok())
+                embed: w.join_embed.and_then(|val| serde_json::from_str(&val).ok()),
             });
         }
         if w.join_dm_enabled.is_some() {
@@ -59,17 +61,19 @@ impl From<WelcomeExpandedRow> for WelcomeExpanded {
                 enabled: w.join_dm_enabled,
                 message_type: w.join_dm_message_type,
                 content: w.join_dm_content,
-                embed: w.join_dm_embed.and_then(|val| serde_json::from_str(&val).ok())
+                embed: w
+                    .join_dm_embed
+                    .and_then(|val| serde_json::from_str(&val).ok()),
             });
         }
         if w.join_roles_enabled.is_some() {
             val.join_roles = Some(WelcomeJoinRolesContent {
-                enabled: w.join_roles_enabled
+                enabled: w.join_roles_enabled,
             });
         }
         if w.leave_enabled.is_some() {
             val.leave = Some(WelcomeLeaveContent {
-                enabled: w.leave_enabled
+                enabled: w.leave_enabled,
             });
         }
         val
@@ -91,13 +95,13 @@ pub struct WelcomeExpandedRow {
     pub join_dm_content: Option<String>,
     pub join_dm_embed: Option<String>,
     pub join_roles_enabled: Option<bool>,
-    pub leave_enabled: Option<bool>
+    pub leave_enabled: Option<bool>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeContent {
-    pub enabled: Option<bool>
+    pub enabled: Option<bool>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
@@ -108,7 +112,7 @@ pub struct WelcomeJoin {
     pub message_type: String,
     pub channel_id: String,
     pub content: String,
-    pub embed: serde_json::Value
+    pub embed: serde_json::Value,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize, sqlx::Type, Debug, Default)]
@@ -118,7 +122,7 @@ pub struct WelcomeJoinContent {
     pub message_type: Option<String>,
     pub channel_id: Option<String>,
     pub content: Option<String>,
-    pub embed: Option<serde_json::Value>
+    pub embed: Option<serde_json::Value>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
@@ -128,7 +132,7 @@ pub struct WelcomeJoinDm {
     pub enabled: bool,
     pub message_type: String,
     pub content: String,
-    pub embed: serde_json::Value
+    pub embed: serde_json::Value,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize, Debug, Default)]
@@ -137,43 +141,58 @@ pub struct WelcomeJoinDmContent {
     pub enabled: Option<bool>,
     pub message_type: Option<String>,
     pub content: Option<String>,
-    pub embed: Option<serde_json::Value>
+    pub embed: Option<serde_json::Value>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeJoinRoles {
     pub id: i64,
-    pub enabled: bool
+    pub enabled: bool,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeJoinRolesContent {
-    pub enabled: Option<bool>
+    pub enabled: Option<bool>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeLeave {
     pub id: i64,
-    pub enabled: bool
+    pub enabled: bool,
 }
 #[derive(sqlx::FromRow, serde::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeLeaveContent {
-    pub enabled: Option<bool>
+    pub enabled: Option<bool>,
 }
 
-pub async fn handle_member_add(member_add: Box<MemberAdd>, event_handler: &EventHandler<'_>) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let guild = event_handler.bot.http.guild(member_add.guild_id).exec().await?.model().await?;
+pub async fn handle_member_add(
+    member_add: Box<MemberAdd>,
+    event_handler: &EventHandler<'_>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let guild = event_handler
+        .bot
+        .http
+        .guild(member_add.guild_id)
+        .exec()
+        .await?
+        .model()
+        .await?;
 
-    let join_config = event_handler.bot.db.welcome().module_join_fetch_by_guild_id(guild.id.0).await?;
-    
+    let join_config = event_handler
+        .bot
+        .db
+        .welcome()
+        .module_join_fetch_by_guild_id(guild.id.0)
+        .await?;
+
     match join_config.message_type.as_str() {
         "text" => {
             member_add_content(join_config, &guild, &member_add.user, event_handler).await?;
-        },
+        }
         "embed" => {
             member_add_embed(join_config, &guild, &member_add.user, event_handler).await?;
         }
@@ -185,30 +204,72 @@ pub async fn handle_member_add(member_add: Box<MemberAdd>, event_handler: &Event
     Ok(())
 }
 
-async fn member_add_content(join_config: WelcomeJoin, guild: &Guild, user: &User, event_handler: &EventHandler<'_>) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn member_add_content(
+    join_config: WelcomeJoin,
+    guild: &Guild,
+    user: &User,
+    event_handler: &EventHandler<'_>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     let parsed = parse_message(&join_config.content, guild, user);
 
     let welcome_channel_id = ChannelId(join_config.channel_id.parse::<u64>()?);
 
-    event_handler.bot.http.create_message(welcome_channel_id).content(&parsed)?.exec().await?;
-    
+    event_handler
+        .bot
+        .http
+        .create_message(welcome_channel_id)
+        .content(&parsed)?
+        .exec()
+        .await?;
+
     Ok(())
 }
 
-async fn member_add_embed(join_config: WelcomeJoin, guild: &Guild, user: &User, event_handler: &EventHandler<'_>) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn member_add_embed(
+    join_config: WelcomeJoin,
+    guild: &Guild,
+    user: &User,
+    event_handler: &EventHandler<'_>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     let welcome_channel_id = ChannelId(join_config.channel_id.parse::<u64>()?);
 
-    let mut embed: twilight_model::channel::embed::Embed = serde_json::from_value::<Embed>(join_config.embed)?.into();
+    let embed: twilight_model::channel::embed::Embed =
+        serde_json::from_value::<Embed>(join_config.embed)?.into();
 
-    if let Some(desc) = embed.description {
-        embed.description = Some(parse_message(desc.as_str(), guild, user));
-    }
+    let embed = parse_embed(embed, guild, user);
 
-    println!("{:?}", embed);
+    event_handler
+        .bot
+        .http
+        .create_message(welcome_channel_id)
+        .embeds(&[embed])?
+        .exec()
+        .await?;
 
-    event_handler.bot.http.create_message(welcome_channel_id).embeds(&[embed])?.exec().await?;
-    
     Ok(())
+}
+
+fn parse_embed(
+    mut embed: twilight_model::channel::embed::Embed,
+    guild: &Guild,
+    user: &User,
+) -> twilight_model::channel::embed::Embed {
+    let parse_string = |s: String| parse_message(s.as_str(), guild, user);
+    embed.description = embed.description.map(parse_string);
+    embed.title = embed.title.map(parse_string);
+    embed.author = embed.author.map(|mut a| {
+        a.name = a.name.map(parse_string);
+        a
+    });
+    embed.footer = embed.footer.map(|mut f| {
+        f.text = parse_string(f.text);
+        f
+    });
+    embed.fields.iter_mut().for_each(|f| {
+        f.name = parse_message(f.name.as_str(), guild, user);
+        f.value = parse_message(f.value.as_str(), guild, user);
+    });
+    embed
 }
 
 fn parse_message(message: &str, guild: &Guild, user: &User) -> String {
@@ -220,16 +281,18 @@ fn parse_message(message: &str, guild: &Guild, user: &User) -> String {
             '{' => {
                 interpolating = true;
                 start_index = i;
-            },
+            }
             '}' if interpolating => {
                 match &message[start_index..i + 1] {
                     "{server.name}" => res.push_str(&guild.name),
-                    "{server.member_count}" => res.push_str(&guild.member_count.unwrap().to_string()),
+                    "{server.member_count}" => {
+                        res.push_str(&guild.member_count.unwrap().to_string())
+                    }
                     "{member.name}" => res.push_str(&user.name),
-                    _ => res.push_str(&message[start_index..i + 1])
+                    _ => res.push_str(&message[start_index..i + 1]),
                 };
                 interpolating = false;
-            },
+            }
             _ => {
                 if !interpolating {
                     res.push(c);
@@ -242,14 +305,18 @@ fn parse_message(message: &str, guild: &Guild, user: &User) -> String {
 
 #[cfg(test)]
 mod tests {
-    use twilight_model::{guild::{Guild, SystemChannelFlags}, id::{GuildId, UserId}, user::User};
+    use twilight_embed_builder::{EmbedAuthorBuilder, EmbedFieldBuilder, EmbedFooterBuilder};
+    use twilight_model::{
+        guild::{Guild, SystemChannelFlags},
+        id::{GuildId, UserId},
+        user::User,
+    };
 
     use crate::modules::welcome::parse_message;
 
-    #[test]
-    fn test_parse_message() {
-        let message = "Welcome to {server.name}, {member.name}! You are member #{server.member_count}.";
-    
+    use super::parse_embed;
+
+    fn get_test_data() -> (Guild, User) {
         let guild = Guild {
             afk_channel_id: None,
             afk_timeout: 0,
@@ -258,7 +325,8 @@ mod tests {
             approximate_presence_count: None,
             banner: None,
             channels: vec![],
-            default_message_notifications: twilight_model::guild::DefaultMessageNotificationLevel::All,
+            default_message_notifications:
+                twilight_model::guild::DefaultMessageNotificationLevel::All,
             description: None,
             discovery_splash: None,
             emojis: vec![],
@@ -274,7 +342,7 @@ mod tests {
             member_count: Some(24),
             members: vec![],
             mfa_level: twilight_model::guild::MfaLevel::None,
-            name: "The Test Server".to_string(),
+            name: "Test Server".to_string(),
             nsfw_level: twilight_model::guild::NSFWLevel::Default,
             owner_id: UserId(0),
             owner: None,
@@ -296,7 +364,7 @@ mod tests {
             widget_channel_id: None,
             widget_enabled: None,
         };
-    
+
         let user = User {
             avatar: None,
             bot: false,
@@ -312,8 +380,45 @@ mod tests {
             system: None,
             verified: None,
         };
-    
+
+        (guild, user)
+    }
+
+    #[test]
+    fn test_parse_message() {
+        let (guild, user) = get_test_data();
+        let message =
+            "Welcome to {server.name}, {member.name}! You are member #{server.member_count}.";
+
         let parsed = parse_message(message, &guild, &user);
-        assert_eq!(parsed, "Welcome to The Test Server, Test User! You are member #24.")
+        assert_eq!(
+            parsed,
+            "Welcome to Test Server, Test User! You are member #24."
+        )
+    }
+
+    #[test]
+    fn test_parse_embed() {
+        let (guild, user) = get_test_data();
+
+        let embed = twilight_embed_builder::EmbedBuilder::new()
+            .title("{member.name} in title")
+            .author(EmbedAuthorBuilder::new().name("{member.name}").build())
+            .footer(EmbedFooterBuilder::new("{server.name}").build())
+            .field(EmbedFieldBuilder::new("{server.name}", "{server.member_count}").build())
+            .build()
+            .expect("Failed to build test embed");
+
+        let expected = twilight_embed_builder::EmbedBuilder::new()
+            .title("Test User in title")
+            .author(EmbedAuthorBuilder::new().name("Test User").build())
+            .footer(EmbedFooterBuilder::new("Test Server").build())
+            .field(EmbedFieldBuilder::new("Test Server", "24").build())
+            .build()
+            .expect("Failed to build expected embed");
+
+        let embed = parse_embed(embed, &guild, &user);
+
+        assert_eq!(embed, expected)
     }
 }

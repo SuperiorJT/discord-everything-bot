@@ -30,7 +30,11 @@ pub async fn process(
     match command.data.name.as_str() {
         "ping" => PingCommand(command).process_command(event_handler).await,
         "poll" => PollCommand(command).process_command(event_handler).await,
-        "poll_emoji" => PollEmojiCommand(command).process_command(event_handler).await,
+        "poll_emoji" => {
+            PollEmojiCommand(command)
+                .process_command(event_handler)
+                .await
+        }
         _ => Err(Box::new(SlashCommandError::CannotProcessUnknownCommand)),
     }
 }

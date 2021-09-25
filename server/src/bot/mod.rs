@@ -12,14 +12,14 @@ use twilight_model::{
 
 use crate::db::Database;
 
-use self::{event_handler::EventHandler};
+use self::event_handler::EventHandler;
 
 #[derive(Clone)]
 pub struct DiscordBot {
     pub cluster: Cluster,
     pub db: Database,
     pub discord_cache: InMemoryCache,
-    pub http: Client
+    pub http: Client,
 }
 
 impl DiscordBot {
@@ -28,13 +28,22 @@ impl DiscordBot {
             cluster,
             db,
             discord_cache,
-            http
+            http,
         }
     }
 
     pub async fn start(&self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.cluster.up().await;
-        let _guild_ids = self.http.current_user_guilds().exec().await?.models().await?.iter().map(|g| g.id).collect::<Vec<GuildId>>();
+        let _guild_ids = self
+            .http
+            .current_user_guilds()
+            .exec()
+            .await?
+            .models()
+            .await?
+            .iter()
+            .map(|g| g.id)
+            .collect::<Vec<GuildId>>();
         // self.db.validate_guilds(guild_ids).await?;
         self.set_up_global_commands().await?;
 
@@ -71,13 +80,16 @@ impl DiscordBot {
                         description: "When do you want to stop polling?".into(),
                         name: "ends".into(),
                         required: false,
-                    })
+                    }),
                 ],
             },
         ];
         // http.set_global_commands(commands.clone()).unwrap();
         let id = dotenv::var("DEFAULT_GUILD_ID")
-            .map(|id| id.parse::<u64>().expect("Failed to parse env var DEFAULT_GUILD_ID"))
+            .map(|id| {
+                id.parse::<u64>()
+                    .expect("Failed to parse env var DEFAULT_GUILD_ID")
+            })
             .expect("env file is missing DEFAULT_GUILD_ID");
         self.http
             .set_guild_commands(GuildId(id), &commands)?

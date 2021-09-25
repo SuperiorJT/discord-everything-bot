@@ -1,8 +1,11 @@
 use std::{collections::HashMap, error::Error};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use twilight_http::{Client, request::{AuditLogReason, prelude::RequestReactionType}};
+use twilight_http::{
+    request::{prelude::RequestReactionType, AuditLogReason},
+    Client,
+};
 use twilight_model::{
     channel::{embed::Embed, ReactionType},
     gateway::payload::{ReactionAdd, ReactionRemove},
@@ -31,7 +34,11 @@ impl ReactionRolesMsg {
         event_handler: &EventHandler<'_>,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let emoji_id = match &reaction_add.emoji {
-            ReactionType::Custom { animated: _, id, name: _ } => id,
+            ReactionType::Custom {
+                animated: _,
+                id,
+                name: _,
+            } => id,
             ReactionType::Unicode { name: _ } => return Err("Invalid emoji reaction".into()),
         };
         event_handler
@@ -55,7 +62,11 @@ impl ReactionRolesMsg {
         event_handler: &EventHandler<'_>,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let emoji_id = match &reaction_remove.emoji {
-            ReactionType::Custom { animated: _, id, name: _ } => id,
+            ReactionType::Custom {
+                animated: _,
+                id,
+                name: _,
+            } => id,
             ReactionType::Unicode { name: _ } => return Err("Invalid emoji reaction".into()),
         };
         event_handler
@@ -82,16 +93,29 @@ impl ReactionRolesMsg {
             return Err("Reaction Role already posted: Message ID is not empty".into());
         }
 
-        let message = http.create_message(self.channel_id).content(&self.content)?.embeds(&self.embeds)?.exec().await?.model().await?;
+        let message = http
+            .create_message(self.channel_id)
+            .content(&self.content)?
+            .embeds(&self.embeds)?
+            .exec()
+            .await?
+            .model()
+            .await?;
 
         self.message_id = Some(message.id);
 
         // react with all of the emoji in the role map
         for key in self.role_map.keys() {
-            http.create_reaction(self.channel_id, message.id, &RequestReactionType::Custom {
-                id: *key,
-                name: None,
-            }).exec().await?;
+            http.create_reaction(
+                self.channel_id,
+                message.id,
+                &RequestReactionType::Custom {
+                    id: *key,
+                    name: None,
+                },
+            )
+            .exec()
+            .await?;
         }
 
         Ok(())

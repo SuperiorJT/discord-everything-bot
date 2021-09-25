@@ -1,12 +1,15 @@
 pub mod queries;
 use std::sync::Arc;
 
-use rusqlite::{Connection, Result, params};
+use rusqlite::{params, Connection, Result};
 use sqlx::{Executor, SqlitePool};
 use tokio::sync::Mutex;
 use twilight_model::id::GuildId;
 
-use self::queries::{guild::GuildPluginState, poll::SqlPollQueries, reaction_roles::SqlReactionRolesQueries, welcome::WelcomeQueries};
+use self::queries::{
+    guild::GuildPluginState, poll::SqlPollQueries, reaction_roles::SqlReactionRolesQueries,
+    welcome::WelcomeQueries,
+};
 
 pub struct OldDatabase(Arc<Mutex<Connection>>);
 
@@ -33,18 +36,18 @@ impl OldDatabase {
         if let Ok(version) = OldDatabase::get_version(conn) {
             if version < SCHEMA_VERSION {
                 // TODO: Implement schema migrations
-                conn.execute("INSERT INTO version (version) VALUES (?1)", params![SCHEMA_VERSION])?;
+                conn.execute(
+                    "INSERT INTO version (version) VALUES (?1)",
+                    params![SCHEMA_VERSION],
+                )?;
             }
-            return Ok(())
+            return Ok(());
         }
         Ok(())
     }
 
     fn create_version_table(conn: &Connection) -> Result<()> {
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS version (version INTEGER)",
-            []
-        )?;
+        conn.execute("CREATE TABLE IF NOT EXISTS version (version INTEGER)", [])?;
         Ok(())
     }
 
@@ -57,7 +60,7 @@ impl OldDatabase {
                     start       DATE,
                     ends        DATE
             )",
-            []
+            [],
         )?;
         conn.execute(
             "CREATE TABLE IF NOT EXISTS poll_option (
@@ -67,7 +70,7 @@ impl OldDatabase {
                     negative_id     INTEGER,
                     negative_name   TEXT
             )",
-            []
+            [],
         )?;
         Ok(())
     }
@@ -78,7 +81,7 @@ impl OldDatabase {
                 guild_id    INTEGER PRIMARY KEY,
                 enabled     BOOLEAN
             )",
-            []
+            [],
         )?;
         conn.execute(
             "CREATE TABLE IF NOT EXISTS welcome_join (
@@ -89,7 +92,7 @@ impl OldDatabase {
                 content         TEXT
                 embed           TEXT
             )",
-            []
+            [],
         )?;
         Ok(())
     }
@@ -100,7 +103,7 @@ impl OldDatabase {
                 guild_id    INTEGER PRIMARY KEY,
                 enabled     BOOLEAN
             )",
-            []
+            [],
         )?;
         conn.execute(
             "CREATE TABLE IF NOT EXISTS reaction_roles_message (
@@ -111,15 +114,21 @@ impl OldDatabase {
                     embeds      TEXT,
                     roles       TEXT
             )",
-            []
+            [],
         )?;
         Ok(())
     }
 
     pub fn get_version(conn: &Connection) -> Result<u32> {
-        let version = conn.prepare("SELECT version FROM version LIMIT 1")?.query_map([], |row| row.get(0))?.next();
+        let version = conn
+            .prepare("SELECT version FROM version LIMIT 1")?
+            .query_map([], |row| row.get(0))?
+            .next();
         version.unwrap_or_else(|| {
-            conn.execute("INSERT INTO version (version) VALUES (?1)", params![SCHEMA_VERSION])?;
+            conn.execute(
+                "INSERT INTO version (version) VALUES (?1)",
+                params![SCHEMA_VERSION],
+            )?;
             Ok(SCHEMA_VERSION)
         })
     }
@@ -134,44 +143,64 @@ impl OldDatabase {
 
     pub async fn get_guild_state(&self, guild_id: GuildId) -> Result<GuildPluginState> {
         let conn = self.0.lock().await;
-        let state = conn.prepare("
+        let state = conn
+            .prepare(
+                "
                 SELECT welcome.guild_id AS guild_id, welcome.enabled, reaction_roles.enabled
                 FROM welcome
                 INNER JOIN reaction_roles ON welcome.guild_id = reaction_roles.guild_id
                 WHERE welcome.guild_id = ?
-            ")?
+            ",
+            )?
             .query_map(params![guild_id.0], |row| {
                 Ok(GuildPluginState {
                     welcome: row.get(0).unwrap_or(false),
-                    reaction_roles: row.get(1).unwrap_or(false)
+                    reaction_roles: row.get(1).unwrap_or(false),
                 })
-            })?.next();
+            })?
+            .next();
 
-        state.unwrap_or(Ok(GuildPluginState { welcome: false, reaction_roles: false }))
+        state.unwrap_or(Ok(GuildPluginState {
+            welcome: false,
+            reaction_roles: false,
+        }))
     }
 
     pub async fn validate_guilds(&self, guild_ids: Vec<GuildId>) -> Result<()> {
         let mut conn = self.0.lock().await;
-        let ids_with_states = conn.prepare("
+        let ids_with_states = conn
+            .prepare(
+                "
                 SELECT welcome.guild_id AS guild_id
                 FROM welcome
                 INNER JOIN reaction_roles ON welcome.guild_id = reaction_roles.guild_id
-            ")?
-            .query_map([], |row| -> Result<u64> {
-                row.get(0)
-            })?.map(|row| row.unwrap()).collect::<Vec<u64>>();
+            ",
+            )?
+            .query_map([], |row| -> Result<u64> { row.get(0) })?
+            .map(|row| row.unwrap())
+            .collect::<Vec<u64>>();
 
-        let ids_to_validate: Vec<u64> = guild_ids.iter().filter(|guild_id| !ids_with_states.contains(&guild_id.0)).map(|guild_id| guild_id.0).collect();
+        let ids_to_validate: Vec<u64> = guild_ids
+            .iter()
+            .filter(|guild_id| !ids_with_states.contains(&guild_id.0))
+            .map(|guild_id| guild_id.0)
+            .collect();
         let tx = conn.transaction()?;
         for guild_id in ids_to_validate.iter() {
-            tx.execute("
+            tx.execute(
+                "
                 INSERT INTO welcome (guild_id, enabled)
                 VALUES (?, false)
-            ", params![guild_id])?;
-            tx.execute("
+            ",
+                params![guild_id],
+            )?;
+            tx.execute(
+                "
                 INSERT INTO reaction_roles (guild_id, enabled)
                 VALUES (?, false)
-            ", params![guild_id])?;
+            ",
+                params![guild_id],
+            )?;
         }
         tx.commit()?;
         Ok(())
@@ -185,7 +214,7 @@ impl Clone for OldDatabase {
 }
 
 pub struct Database {
-    pub pool: SqlitePool
+    pub pool: SqlitePool,
 }
 
 impl Database {
@@ -203,7 +232,7 @@ impl Database {
 impl Clone for Database {
     fn clone(&self) -> Self {
         Self {
-            pool: self.pool.clone()
+            pool: self.pool.clone(),
         }
     }
 }

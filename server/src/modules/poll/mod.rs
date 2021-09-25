@@ -1,5 +1,9 @@
 use chrono::{NaiveDateTime, Utc};
-use twilight_model::{application::interaction::{application_command::CommandDataOption, ApplicationCommand}, id::EmojiId, user::User};
+use twilight_model::{
+    application::interaction::{application_command::CommandDataOption, ApplicationCommand},
+    id::EmojiId,
+    user::User,
+};
 
 pub mod slash_commands;
 

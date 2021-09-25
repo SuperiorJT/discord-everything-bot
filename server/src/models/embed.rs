@@ -8,7 +8,7 @@ pub struct EmbedAuthor {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>
+    pub url: Option<String>,
 }
 
 impl Into<twilight_model::channel::embed::EmbedAuthor> for EmbedAuthor {
@@ -27,7 +27,7 @@ pub struct EmbedFooter {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>
+    pub text: Option<String>,
 }
 
 impl Into<twilight_model::channel::embed::EmbedFooter> for EmbedFooter {
@@ -63,7 +63,7 @@ pub struct Embed {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>
+    pub url: Option<String>,
 }
 
 impl Into<twilight_model::channel::embed::Embed> for Embed {
@@ -91,13 +91,15 @@ impl Into<twilight_model::channel::embed::Embed> for Embed {
             title: self.title,
             url: self.url,
             kind: "rich".to_string(),
-            video: None
+            video: None,
         }
     }
 }
 
 fn css_to_u32(color: String) -> u32 {
-    let bytes = csscolorparser::parse(color.as_str()).unwrap_or(csscolorparser::Color::from_rgb(0f64, 0f64, 0f64)).rgba_u8();
+    let bytes = csscolorparser::parse(color.as_str())
+        .unwrap_or(csscolorparser::Color::from_rgb(0f64, 0f64, 0f64))
+        .rgba_u8();
     (u32::from(bytes.0) << 16) + (u32::from(bytes.1) << 8) + u32::from(bytes.2)
 }
 

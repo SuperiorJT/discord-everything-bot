@@ -1,2 +1,2 @@
-pub mod welcome;
 pub mod guild;
+pub mod welcome;

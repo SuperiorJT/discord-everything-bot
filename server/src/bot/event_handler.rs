@@ -34,15 +34,13 @@ impl EventHandler<'_> {
         match event {
             Event::MemberAdd(member_add) => handle_member_add(member_add, &handler).await?,
             Event::InteractionCreate(interaction) => match interaction.0 {
-                Interaction::ApplicationCommand(command) => slash_commands::process(&command, &handler).await?,
+                Interaction::ApplicationCommand(command) => {
+                    slash_commands::process(&command, &handler).await?
+                }
                 _ => {}
             },
-            Event::ReactionAdd(_reaction) => {
-                
-            },
-            Event::ReactionRemove(_reaction) => {
-
-            },
+            Event::ReactionAdd(_reaction) => {}
+            Event::ReactionRemove(_reaction) => {}
             _ => {}
         }
 

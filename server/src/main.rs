@@ -1,7 +1,7 @@
 #![feature(type_alias_impl_trait)]
-mod db;
 mod api;
 mod bot;
+mod db;
 mod event_runner;
 mod models;
 mod modules;
@@ -9,13 +9,14 @@ mod modules;
 use std::error::Error;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{cluster::ShardScheme, Cluster};
-use twilight_http::{Client as HttpClient};
-use twilight_model::{
-    gateway::Intents,
-    id::{ApplicationId}
-};
+use twilight_http::Client as HttpClient;
+use twilight_model::{gateway::Intents, id::ApplicationId};
 
-use crate::{bot::DiscordBot, db::Database, event_runner::{run, EventRunner}};
+use crate::{
+    bot::DiscordBot,
+    db::Database,
+    event_runner::{run, EventRunner},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -33,10 +34,13 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .resource_types(ResourceType::USER_CURRENT)
         .build();
 
-    let (cluster, events) = Cluster::builder(token.clone(), Intents::GUILD_MESSAGES | Intents::GUILD_MEMBERS)
-        .shard_scheme(scheme)
-        .build()
-        .await?;
+    let (cluster, events) = Cluster::builder(
+        token.clone(),
+        Intents::GUILD_MESSAGES | Intents::GUILD_MEMBERS,
+    )
+    .shard_scheme(scheme)
+    .build()
+    .await?;
 
     let db = Database::new(&db_path).await?;
 

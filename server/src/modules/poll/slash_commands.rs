@@ -5,10 +5,7 @@ use twilight_embed_builder::{EmbedAuthorBuilder, EmbedBuilder, EmbedFooterBuilde
 use twilight_http::request::prelude::RequestReactionType;
 use twilight_model::application::interaction::ApplicationCommand;
 
-use crate::{
-    bot::{event_handler::EventHandler},
-    modules::poll::Poll,
-};
+use crate::{bot::event_handler::EventHandler, modules::poll::Poll};
 
 pub struct PollCommand<'a>(pub &'a Box<ApplicationCommand>);
 
@@ -82,8 +79,6 @@ impl<'a> PollCommand<'a> {
         //     .await
         //     .expect("could not create poll in db");
 
-        
-
         // let response;
         // let (positive, negative) = match db.poll().fetch_poll_options(command.guild_id.unwrap()).await {
         //     Ok(res) => {
@@ -109,24 +104,27 @@ impl<'a> PollCommand<'a> {
         //     ),
         // };
 
-        let positive = RequestReactionType::Unicode {
-            name: "👍"
-        };
-        let negative = RequestReactionType::Unicode {
-            name: "👎"
-        };
-
+        let positive = RequestReactionType::Unicode { name: "👍" };
+        let negative = RequestReactionType::Unicode { name: "👎" };
 
         event_handler
             .bot
             .http
-            .create_reaction(original_response.channel_id, original_response.id, &positive)
+            .create_reaction(
+                original_response.channel_id,
+                original_response.id,
+                &positive,
+            )
             .exec()
             .await?;
         event_handler
             .bot
             .http
-            .create_reaction(original_response.channel_id, original_response.id, &negative)
+            .create_reaction(
+                original_response.channel_id,
+                original_response.id,
+                &negative,
+            )
             .exec()
             .await?;
 
@@ -141,7 +139,9 @@ impl<'a> PollEmojiCommand<'a> {
         &self,
         event_handler: &EventHandler<'a>,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        event_handler.simple_interaction_reply(self.0, "Pong!").await?;
+        event_handler
+            .simple_interaction_reply(self.0, "Pong!")
+            .await?;
 
         Ok(())
     }
