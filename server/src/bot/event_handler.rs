@@ -59,6 +59,7 @@ impl EventHandler<'_> {
                 &command.token,
                 &InteractionResponse::ChannelMessageWithSource(CallbackData {
                     allowed_mentions: None,
+                    components: None,
                     content: Some(message.into()),
                     embeds: vec![],
                     flags: None,
@@ -83,6 +84,7 @@ impl EventHandler<'_> {
                 &command.token,
                 &InteractionResponse::ChannelMessageWithSource(CallbackData {
                     allowed_mentions: None,
+                    components: None,
                     content: None,
                     embeds,
                     flags: None,

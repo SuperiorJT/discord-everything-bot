@@ -6,7 +6,7 @@ use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::{Cluster, Event};
 use twilight_http::Client;
 use twilight_model::{
-    application::command::{ChoiceCommandOptionData, Command, CommandOption},
+    application::command::{ChoiceCommandOptionData, Command, CommandOption, CommandType},
     id::GuildId,
 };
 
@@ -59,6 +59,7 @@ impl DiscordBot {
                 default_permission: None,
                 description: "Ping Bingus".into(),
                 id: None,
+                kind: CommandType::ChatInput,
                 options: vec![],
             },
             Command {
@@ -68,6 +69,7 @@ impl DiscordBot {
                 default_permission: None,
                 description: "Create a poll".into(),
                 id: None,
+                kind: CommandType::ChatInput,
                 options: vec![
                     CommandOption::String(ChoiceCommandOptionData {
                         choices: vec![],

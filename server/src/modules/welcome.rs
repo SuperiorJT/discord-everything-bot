@@ -518,6 +518,7 @@ mod tests {
             voice_states: vec![],
             widget_channel_id: None,
             widget_enabled: None,
+            threads: vec![],
         };
 
         let user = User {
@@ -534,6 +535,8 @@ mod tests {
             public_flags: None,
             system: None,
             verified: None,
+            accent_color: None,
+            banner: None,
         };
 
         (guild, user)
