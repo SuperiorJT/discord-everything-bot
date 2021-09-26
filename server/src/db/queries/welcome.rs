@@ -2,7 +2,8 @@ use sqlx::{Executor, Sqlite, SqlitePool};
 
 use crate::modules::welcome::{
     WelcomeContent, WelcomeExpanded, WelcomeExpandedRow, WelcomeJoin, WelcomeJoinContent,
-    WelcomeJoinDmContent, WelcomeJoinRolesContent, WelcomeLeaveContent,
+    WelcomeJoinDm, WelcomeJoinDmContent, WelcomeJoinRoles, WelcomeJoinRolesContent, WelcomeLeave,
+    WelcomeLeaveContent,
 };
 
 #[derive(sqlx::FromRow, serde::Serialize, Debug)]
@@ -44,7 +45,11 @@ impl WelcomeQueries {
                 join_dm.content AS join_dm_content,
                 join_dm.embed AS join_dm_embed,
                 join_roles.enabled AS join_roles_enabled,
+                join_roles.roles AS join_roles_roles,
+                join_roles.delay AS join_roles_delay,
                 leave.enabled AS leave_enabled
+                leave.channel_id AS leave_channel_id
+                leave.content AS leave_content
             FROM welcome
             LEFT JOIN welcome_join "join" ON "join".welcome_id = welcome.id
             LEFT JOIN welcome_join_dm join_dm ON join_dm.welcome_id = welcome.id
@@ -66,6 +71,63 @@ impl WelcomeQueries {
             SELECT "join".*
             FROM welcome
             LEFT JOIN welcome_join "join" ON "join".welcome_id = welcome.id
+			WHERE welcome.guild_id = ?
+            "#,
+        )
+        .bind(guild_id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(module.into())
+    }
+
+    pub async fn module_join_dm_fetch_by_guild_id(
+        &self,
+        guild_id: u64,
+    ) -> sqlx::Result<WelcomeJoinDm> {
+        let guild_id = guild_id.to_string();
+        let module: WelcomeJoinDm = sqlx::query_as::<_, WelcomeJoinDm>(
+            r#"
+            SELECT "join_dm".*
+            FROM welcome
+            LEFT JOIN welcome_join_dm "join_dm" ON "join_dm".welcome_id = welcome.id
+			WHERE welcome.guild_id = ?
+            "#,
+        )
+        .bind(guild_id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(module.into())
+    }
+
+    pub async fn module_join_roles_fetch_by_guild_id(
+        &self,
+        guild_id: u64,
+    ) -> sqlx::Result<WelcomeJoinRoles> {
+        let guild_id = guild_id.to_string();
+        let module: WelcomeJoinRoles = sqlx::query_as::<_, WelcomeJoinRoles>(
+            r#"
+            SELECT "join_roles".*
+            FROM welcome
+            LEFT JOIN welcome_join_roles "join_roles" ON "join_roles".welcome_id = welcome.id
+			WHERE welcome.guild_id = ?
+            "#,
+        )
+        .bind(guild_id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(module.into())
+    }
+
+    pub async fn module_leave_fetch_by_guild_id(
+        &self,
+        guild_id: u64,
+    ) -> sqlx::Result<WelcomeLeave> {
+        let guild_id = guild_id.to_string();
+        let module: WelcomeLeave = sqlx::query_as::<_, WelcomeLeave>(
+            r#"
+            SELECT "leave".*
+            FROM welcome
+            LEFT JOIN welcome_leave "leave" ON "leave".welcome_id = welcome.id
 			WHERE welcome.guild_id = ?
             "#,
         )

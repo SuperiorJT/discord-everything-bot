@@ -1,6 +1,11 @@
 use std::error::Error;
 
-use twilight_model::{gateway::payload::MemberAdd, guild::Guild, id::ChannelId, user::User};
+use twilight_model::{
+    gateway::payload::MemberAdd,
+    guild::Guild,
+    id::{ChannelId, RoleId},
+    user::User,
+};
 
 use crate::{
     bot::event_handler::EventHandler, db::queries::welcome::WelcomeModule, models::embed::Embed,
@@ -69,11 +74,17 @@ impl From<WelcomeExpandedRow> for WelcomeExpanded {
         if w.join_roles_enabled.is_some() {
             val.join_roles = Some(WelcomeJoinRolesContent {
                 enabled: w.join_roles_enabled,
+                roles: w
+                    .join_roles_roles
+                    .and_then(|val| serde_json::from_str(&val).ok()),
+                delay: w.join_roles_delay,
             });
         }
         if w.leave_enabled.is_some() {
             val.leave = Some(WelcomeLeaveContent {
                 enabled: w.leave_enabled,
+                channel_id: w.leave_channel_id,
+                content: w.leave_content,
             });
         }
         val
@@ -95,7 +106,11 @@ pub struct WelcomeExpandedRow {
     pub join_dm_content: Option<String>,
     pub join_dm_embed: Option<String>,
     pub join_roles_enabled: Option<bool>,
+    pub join_roles_roles: Option<String>,
+    pub join_roles_delay: Option<bool>,
     pub leave_enabled: Option<bool>,
+    pub leave_channel_id: Option<String>,
+    pub leave_content: Option<String>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
@@ -149,12 +164,16 @@ pub struct WelcomeJoinDmContent {
 pub struct WelcomeJoinRoles {
     pub id: i64,
     pub enabled: bool,
+    pub roles: serde_json::Value,
+    pub delay: bool,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeJoinRolesContent {
     pub enabled: Option<bool>,
+    pub roles: Option<serde_json::Value>,
+    pub delay: Option<bool>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
@@ -162,11 +181,15 @@ pub struct WelcomeJoinRolesContent {
 pub struct WelcomeLeave {
     pub id: i64,
     pub enabled: bool,
+    pub channel_id: String,
+    pub content: String,
 }
 #[derive(sqlx::FromRow, serde::Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct WelcomeLeaveContent {
     pub enabled: Option<bool>,
+    pub channel_id: Option<String>,
+    pub content: Option<String>,
 }
 
 pub async fn handle_member_add(
@@ -189,22 +212,93 @@ pub async fn handle_member_add(
         .module_join_fetch_by_guild_id(guild.id.0)
         .await?;
 
-    match join_config.message_type.as_str() {
-        "text" => {
-            member_add_content(join_config, &guild, &member_add.user, event_handler).await?;
+    if join_config.enabled {
+        match join_config.message_type.as_str() {
+            "text" => {
+                member_join_content(join_config, &guild, &member_add.user, event_handler).await?;
+            }
+            "embed" => {
+                member_join_embed(join_config, &guild, &member_add.user, event_handler).await?;
+            }
+            _ => {
+                return Err("Invalid mesage type on welcome_join".into());
+            }
         }
-        "embed" => {
-            member_add_embed(join_config, &guild, &member_add.user, event_handler).await?;
+    }
+
+    let join_dm_config = event_handler
+        .bot
+        .db
+        .welcome()
+        .module_join_dm_fetch_by_guild_id(guild.id.0)
+        .await?;
+
+    if join_dm_config.enabled {
+        match join_dm_config.message_type.as_str() {
+            "text" => {
+                member_join_dm_content(join_dm_config, &guild, &member_add.user, event_handler)
+                    .await?;
+            }
+            "embed" => {
+                member_join_dm_embed(join_dm_config, &guild, &member_add.user, event_handler)
+                    .await?;
+            }
+            _ => {
+                return Err("Invalid mesage type on welcome_join".into());
+            }
         }
-        _ => {
-            return Err("Invalid mesage type on welcome_join".into());
-        }
+    }
+
+    let join_roles_config = event_handler
+        .bot
+        .db
+        .welcome()
+        .module_join_roles_fetch_by_guild_id(guild.id.0)
+        .await?;
+
+    if join_roles_config.enabled {
+        let roles = serde_json::from_value::<Vec<u64>>(join_roles_config.roles)?;
+
+        event_handler
+            .bot
+            .http
+            .update_guild_member(guild.id, member_add.user.id)
+            .roles(
+                roles
+                    .iter()
+                    .map(|id| RoleId::from(*id))
+                    .collect::<Vec<RoleId>>()
+                    .as_slice(),
+            )
+            .exec()
+            .await?;
+    }
+
+    let leave_config = event_handler
+        .bot
+        .db
+        .welcome()
+        .module_leave_fetch_by_guild_id(guild.id.0)
+        .await?;
+
+    if leave_config.enabled {
+        let parsed = parse_message(&leave_config.content, &guild, &member_add.user);
+
+        let welcome_channel_id = ChannelId(leave_config.channel_id.parse::<u64>()?);
+
+        event_handler
+            .bot
+            .http
+            .create_message(welcome_channel_id)
+            .content(&parsed)?
+            .exec()
+            .await?;
     }
 
     Ok(())
 }
 
-async fn member_add_content(
+async fn member_join_content(
     join_config: WelcomeJoin,
     guild: &Guild,
     user: &User,
@@ -225,7 +319,7 @@ async fn member_add_content(
     Ok(())
 }
 
-async fn member_add_embed(
+async fn member_join_embed(
     join_config: WelcomeJoin,
     guild: &Guild,
     user: &User,
@@ -242,6 +336,67 @@ async fn member_add_embed(
         .bot
         .http
         .create_message(welcome_channel_id)
+        .embeds(&[embed])?
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+async fn member_join_dm_content(
+    join_dm_config: WelcomeJoinDm,
+    guild: &Guild,
+    user: &User,
+    event_handler: &EventHandler<'_>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let parsed = parse_message(&join_dm_config.content, guild, user);
+
+    let channel_id = event_handler
+        .bot
+        .http
+        .create_private_channel(user.id)
+        .exec()
+        .await?
+        .model()
+        .await?
+        .id;
+
+    event_handler
+        .bot
+        .http
+        .create_message(channel_id)
+        .content(&parsed)?
+        .exec()
+        .await?;
+
+    Ok(())
+}
+
+async fn member_join_dm_embed(
+    join_dm_config: WelcomeJoinDm,
+    guild: &Guild,
+    user: &User,
+    event_handler: &EventHandler<'_>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let embed: twilight_model::channel::embed::Embed =
+        serde_json::from_value::<Embed>(join_dm_config.embed)?.into();
+
+    let embed = parse_embed(embed, guild, user);
+
+    let channel_id = event_handler
+        .bot
+        .http
+        .create_private_channel(user.id)
+        .exec()
+        .await?
+        .model()
+        .await?
+        .id;
+
+    event_handler
+        .bot
+        .http
+        .create_message(channel_id)
         .embeds(&[embed])?
         .exec()
         .await?;
