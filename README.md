@@ -41,6 +41,8 @@ The `ui` project needs the following environment variables:
 - `VITE_DEFAULT_GUILD_ID` - Currently the bot only works with one guild, the id for that guild should be entered here
 
 ## API
+**IMPORTANT:** The twilight-rs dependencies are pulled from local path for debugging purposes. Clone twilight into a directory that is a sibling of this project directory before running.
+
 Currently the database is sqlite. Migrations aren't implemented yet, so an empty db file is included. To run the server, just start with cargo.
 
 ```bash
