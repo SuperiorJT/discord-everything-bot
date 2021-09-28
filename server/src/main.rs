@@ -5,6 +5,7 @@ mod db;
 mod event_runner;
 mod models;
 mod modules;
+mod util;
 
 use std::error::Error;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};

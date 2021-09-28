@@ -75,9 +75,13 @@
     };
     joinRoles?: {
       enabled: boolean;
+      roles: number[];
+      delay: boolean;
     };
     leave?: {
       enabled: boolean;
+      channelId?: string;
+      content?: string;
     };
   }
 
@@ -141,10 +145,10 @@
     join: {
       enabled: false,
       messageType: 'text',
-      content: 'Hey {member.name}, welcome to **{server.name}**!',
+      content: 'Hey {user.name}, welcome to **{server.name}**!',
       embed: {
         color: '#3B82F6',
-        description: 'Hey {member.name}, welcome to **{server.name}**!',
+        description: 'Hey {user.name}, welcome to **{server.name}**!',
         author: {
           image: null,
           name: '',
@@ -164,10 +168,10 @@
     joinDm: {
       enabled: false,
       messageType: 'text',
-      content: 'Hey {member.name}, welcome to **{server.name}**!',
+      content: 'Hey {user.name}, welcome to **{server.name}**!',
       embed: {
         color: '#3B82F6',
-        description: 'Hey {member.name}, welcome to **{server.name}**!',
+        description: 'Hey {user.name}, welcome to **{server.name}**!',
         author: {
           image: null,
           name: '',
@@ -185,10 +189,13 @@
       }
     },
     joinRoles: {
-      enabled: false
+      enabled: false,
+      roles: [],
+      delay: false
     },
     leave: {
-      enabled: false
+      enabled: false,
+      content: '{user.idname} just left the server'
     }
   };
   const mutators = arrayMutators;

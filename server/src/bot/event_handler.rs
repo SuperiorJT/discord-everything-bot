@@ -9,7 +9,10 @@ use twilight_model::{
     channel::embed::Embed,
 };
 
-use crate::modules::{slash_commands, welcome::handle_member_add};
+use crate::modules::{
+    slash_commands,
+    welcome::{handle_member_add, handle_member_remove},
+};
 
 use super::DiscordBot;
 
@@ -33,6 +36,9 @@ impl EventHandler<'_> {
 
         match event {
             Event::MemberAdd(member_add) => handle_member_add(member_add, &handler).await?,
+            Event::MemberRemove(member_remove) => {
+                handle_member_remove(member_remove, &handler).await?
+            }
             Event::InteractionCreate(interaction) => match interaction.0 {
                 Interaction::ApplicationCommand(command) => {
                     slash_commands::process(&command, &handler).await?
